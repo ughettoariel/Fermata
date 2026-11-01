@@ -107,6 +107,25 @@ public class HomeFragment extends MainActivityFragment {
 	}
 
 	@Override
+	public boolean isVideoModeSupported() {
+		return true;
+	}
+
+	/**
+	 * Back while a video is full screen returns to Home (video keeps playing in the split view),
+	 * same as the folder screens; otherwise the default behavior (press again to exit).
+	 */
+	@Override
+	public boolean onBackPressed() {
+		MainActivityDelegate a = getMainActivity();
+		if ((a != null) && a.getBody().isVideoMode()) {
+			a.getBody().setMode(me.aap.fermata.ui.view.BodyLayout.Mode.BOTH);
+			return true;
+		}
+		return super.onBackPressed();
+	}
+
+	@Override
 	public void navBarItemReselected(int itemId) {
 		View v = getView();
 		if (v instanceof NestedScrollView s) s.smoothScrollTo(0, 0);
