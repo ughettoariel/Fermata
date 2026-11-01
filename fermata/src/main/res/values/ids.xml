@@ -143,4 +143,5 @@
 
     <item name="cursor" type="id" />
 
+    <item name="home_fragment" type="id" />
 </resources>

@@ -5,6 +5,7 @@
     <color name="media_item_poster_progress">#F2FFFFFF</color>
     <color name="media_item_poster_track">#59000000</color>
     <dimen name="media_item_poster_min_width">170dp</dimen>
+    <dimen name="media_item_poster_icon_pad">22dp</dimen>
 
     <style name="AppTheme.PosterShape" parent="">
         <item name="cornerFamily">rounded</item>

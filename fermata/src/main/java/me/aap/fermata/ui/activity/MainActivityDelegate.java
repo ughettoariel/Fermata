@@ -114,6 +114,7 @@ import me.aap.fermata.media.service.MediaSessionCallbackAssistant;
 import me.aap.fermata.ui.fragment.AudioEffectsFragment;
 import me.aap.fermata.ui.fragment.FavoritesFragment;
 import me.aap.fermata.ui.fragment.FoldersFragment;
+import me.aap.fermata.ui.fragment.HomeFragment;
 import me.aap.fermata.ui.fragment.MainActivityFragment;
 import me.aap.fermata.ui.fragment.MediaLibFragment;
 import me.aap.fermata.ui.fragment.NavBarMediator;
@@ -344,18 +345,9 @@ public class MainActivityDelegate extends ActivityDelegate
 			}
 		}
 
-		FutureSupplier<Boolean> f = goToCurrent().onCompletion((ok, fail1) -> {
-			if ((fail1 != null) && !isCancellation(fail1)) {
-				Log.e(fail1, "Last played track not found");
-			}
-			if ((ok == null) || !ok) showFragment(R.id.folders_fragment);
-			checkUpdates();
-		});
-
-		if (!f.isDone() || f.isFailed() || !Boolean.TRUE.equals(f.peek())) {
-			showFragment(R.id.folders_fragment);
-			setContentLoading(f);
-		}
+		// Start on the Home screen (featured video + shelves), Infuse / Apple TV style
+		showFragment(R.id.home_fragment);
+		checkUpdates();
 	}
 
 	private void checkUpdates() {
@@ -474,6 +466,7 @@ public class MainActivityDelegate extends ActivityDelegate
 			case MainActivityPrefs.THEME_STAR_WARS -> R.style.AppTheme_BlackStarWars;
 			case MainActivityPrefs.THEME_PURPLE -> R.style.AppTheme_Purple;
 			case MainActivityPrefs.THEME_CLASSIC -> R.style.AppTheme_Classic;
+			case MainActivityPrefs.THEME_CINEMA -> R.style.AppTheme_Cinema;
 			default -> R.style.AppTheme_Dark;
 		};
 		ctx.setTheme(theme);
@@ -692,7 +685,7 @@ public class MainActivityDelegate extends ActivityDelegate
 
 	public void backToNavFragment() {
 		int id = getActiveNavItemId();
-		showFragment((id == ID_NULL) ? R.id.folders_fragment : id);
+		showFragment((id == ID_NULL) ? R.id.home_fragment : id);
 	}
 
 	@Override
@@ -709,7 +702,9 @@ public class MainActivityDelegate extends ActivityDelegate
 	}
 
 	protected ActivityFragment createFragment(int id) {
-		if (id == R.id.folders_fragment) {
+		if (id == R.id.home_fragment) {
+			return new HomeFragment();
+		} else if (id == R.id.folders_fragment) {
 			return new FoldersFragment();
 		} else if (id == R.id.favorites_fragment) {
 			return new FavoritesFragment();

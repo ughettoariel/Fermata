@@ -391,4 +391,13 @@ Por favor, reinicie la aplicación.</string>
     <string name="err_failed_to_download">No se pudo descargar %1$s</string>
     <string name="err_no_audio_record_perm">No se concede permiso de grabación de audio</string>
     <string name="err_failed_start_service">No se pudo iniciar el servicio: %s</string>
+    <!-- Pantalla de inicio (estilo Infuse / Apple TV) -->
+    <string name="home">Inicio</string>
+    <string name="continue_watching">Seguir viendo</string>
+    <string name="see_all">Ver todo</string>
+    <string name="resume">Continuar</string>
+    <string name="time_left">Quedan %1$s</string>
+    <string name="home_empty_title">Acá van a aparecer tus videos</string>
+    <string name="home_empty_body">Agregá una carpeta con videos para armar tu biblioteca.</string>
+    <string name="theme_cinema">Cine (Apple TV)</string>
 </resources>

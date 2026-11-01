@@ -80,6 +80,10 @@ public class NavBarMediator extends PrefNavBarMediator
 
 		for (String name : names) {
 			switch (name) {
+				case "home":
+					items.add(create(ctx, R.id.home_fragment, R.drawable.nav_home, R.string.home,
+							items.size() < max));
+					continue;
 				case "folders":
 					items.add(
 							create(ctx, R.id.folders_fragment, me.aap.utils.R.drawable.folder, R.string.folders,
@@ -320,6 +324,7 @@ public class NavBarMediator extends PrefNavBarMediator
 		AddonManager amgr = FermataApplication.get().getAddonManager();
 		Set<String> names = newLinkedHashSet(BuildConfig.ADDONS.length + 4);
 		String[] pref = getPreferenceStore(nb).getStringArrayPref(getPref(nb));
+		names.add("home"); // Home always first, Infuse / Apple TV style
 		CollectionUtils.addAll(names, pref);
 		names.add("folders");
 		names.add("favorites");
@@ -333,7 +338,8 @@ public class NavBarMediator extends PrefNavBarMediator
 	}
 
 	private static String idToName(@IdRes int id) {
-		if (id == R.id.folders_fragment) return "folders";
+		if (id == R.id.home_fragment) return "home";
+		else if (id == R.id.folders_fragment) return "folders";
 		else if (id == R.id.favorites_fragment) return "favorites";
 		else if (id == R.id.playlists_fragment) return "playlists";
 		else if (id == R.id.menu) return "menu";

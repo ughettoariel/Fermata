@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Cinema: near-black, neutral greys and white accents, in the spirit of Apple TV / Infuse -->
+    <style name="AppTheme.Cinema">
+
+        <item name="android:colorBackground">#0B0D12</item>
+
+        <!-- Status bar-->
+        <item name="colorPrimaryDark">#0B0D12</item>
+
+        <!-- Tool/Nav bars -->
+        <item name="colorPrimary">#12151C</item>
+        <item name="colorOnPrimary">#E8ECF2</item>
+        <item name="android:textColorPrimary">?colorOnPrimary</item>
+
+        <!-- List/Media items -->
+        <item name="colorSecondary">#161A22</item>
+        <item name="colorOnSecondary">#C9CFD9</item>
+        <item name="android:textColorSecondary">#F2F4F8</item>
+        <item name="boxStrokeColor">#33FFFFFF</item>
+
+        <!-- Active media item -->
+        <item name="alpha">1</item>
+        <item name="colorSecondaryVariant">#3A4458</item>
+        <item name="android:textColorTertiary">#FFFFFF</item>
+
+        <!-- Popup menu -->
+        <item name="colorSurface">#161A22</item>
+        <item name="colorOnSurface">?colorOnPrimary</item>
+        <item name="colorPrimarySurface">#161A22</item>
+        <item name="colorOnPrimarySurface">?colorOnPrimary</item>
+
+        <item name="colorAccent">#FFFFFF</item>
+        <item name="rippleColor">#33FFFFFF</item>
+
+        <item name="android:textColorHint">#8A93A3</item>
+
+        <item name="colorControlNormal">#9AA3B2</item>
+        <item name="colorControlActivated">#FFFFFF</item>
+
+        <item name="cornerRadius">12dp</item>
+    </style>
+
+</resources>
