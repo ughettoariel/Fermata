@@ -62,7 +62,7 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 			@Override
 			public boolean onTouchEvent(MotionEvent e) {
 				if (sc != null) md.setSurface(sc);
-				tb.show();
+				tb.show(e.getActionMasked() == MotionEvent.ACTION_DOWN);
 				return md.motionEvent(e);
 			}
 		};
@@ -178,7 +178,7 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 		private final int iconSize;
 		private final int pad;
 		private String[] appsPref;
-		private String highlightedPkg;
+		private String highlighted;
 		private long downTime;
 		private float downX, downY;
 		private View downButton;
@@ -203,8 +203,16 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 		}
 
 		void show() {
-			if (!Arrays.equals(appsPref, LauncherActivity.getQuickAppsPref()) ||
-					!Objects.equals(highlightedPkg, LauncherActivity.getLastLaunchedPkg())) {
+			show(true);
+		}
+
+		/**
+		 * @param refresh re-check favorites and the highlighted app; done on touch down only,
+		 *                not on every move event
+		 */
+		void show(boolean refresh) {
+			if (refresh && (!Arrays.equals(appsPref, LauncherActivity.getQuickAppsPref()) ||
+					!Objects.equals(highlighted, LauncherActivity.getLastLaunched()))) {
 				rebuild();
 				setX(Math.max(minX, Math.min(getX(), maxX - iconSize * buttons.size())));
 			}
@@ -217,12 +225,13 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 			removeAllViews();
 			buttons.clear();
 			appsPref = LauncherActivity.getQuickAppsPref();
-			highlightedPkg = LauncherActivity.getLastLaunchedPkg();
+			highlighted = LauncherActivity.getLastLaunched();
+			var app0 = FermataApplication.get();
 
 			for (var app : LauncherActivity.getQuickApps(ctx, MAX_QUICK_APPS)) {
-				var selected = app.pkg.equals(highlightedPkg);
+				var selected = app.key().equals(highlighted);
 				addButton(app.icon, false, selected, () -> {
-					LauncherActivity.launchApp(ctx, app.pkg, app.name);
+					LauncherActivity.launchApp(app0, app.pkg, app.name);
 					show();
 				}, null);
 			}
@@ -252,7 +261,7 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 		@SuppressLint("ClickableViewAccessibility")
 		@Override
 		public boolean onTouchEvent(MotionEvent e) {
-			show();
+			show(e.getActionMasked() == MotionEvent.ACTION_DOWN);
 			switch (e.getActionMasked()) {
 				case MotionEvent.ACTION_DOWN -> {
 					downTime = uptimeMillis();

@@ -75,14 +75,18 @@ public class LauncherActivity extends AppCompatActivity {
 	}
 
 	/**
-	 * Package of the app last opened from the launcher or the quick switcher.
+	 * App last opened from the launcher or the quick switcher, as "pkg" or "pkg#activity".
 	 */
 	@Nullable
-	private static String lastLaunchedPkg;
+	private static String lastLaunched;
 
 	@Nullable
-	static String getLastLaunchedPkg() {
-		return lastLaunchedPkg;
+	static String getLastLaunched() {
+		return lastLaunched;
+	}
+
+	static String appKey(String pkg, @Nullable String name) {
+		return (name == null) ? pkg : pkg + '#' + name;
 	}
 
 	/**
@@ -100,6 +104,10 @@ public class LauncherActivity extends AppCompatActivity {
 			this.name = name;
 			this.label = label;
 			this.icon = icon;
+		}
+
+		String key() {
+			return appKey(pkg, name);
 		}
 	}
 
@@ -121,6 +129,7 @@ public class LauncherActivity extends AppCompatActivity {
 
 		for (var entry : getQuickAppsPref()) {
 			if (result.size() >= max) break;
+			if ((entry == null) || entry.isEmpty()) continue;
 			var sep = entry.indexOf('#');
 			var pkg = (sep < 0) ? entry : entry.substring(0, sep);
 			var name = (sep < 0) ? null : entry.substring(sep + 1);
@@ -165,7 +174,7 @@ public class LauncherActivity extends AppCompatActivity {
 			intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
 			intent.putExtra(INTENT_EXTRA_MODE, FermataApplication.get().getMirroringMode());
 			ctx.startActivity(intent);
-			lastLaunchedPkg = pkg;
+			lastLaunched = appKey(pkg, name);
 			MirrorDisplay.disableAccelRotation();
 			return true;
 		} catch (Exception err) {

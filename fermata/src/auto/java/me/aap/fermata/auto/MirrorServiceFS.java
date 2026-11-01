@@ -176,10 +176,10 @@ public class MirrorServiceFS extends CarAppService {
 				MirrorActivity.onHomeButtonClick();
 				return;
 			}
-			var last = LauncherActivity.getLastLaunchedPkg();
+			var last = LauncherActivity.getLastLaunched();
 			int next = 0;
 			for (int i = 0; i < apps.size(); i++) {
-				if (apps.get(i).pkg.equals(last)) {
+				if (apps.get(i).key().equals(last)) {
 					next = (i + 1) % apps.size();
 					break;
 				}

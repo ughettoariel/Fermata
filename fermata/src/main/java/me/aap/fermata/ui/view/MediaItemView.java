@@ -130,6 +130,9 @@ public class MediaItemView extends ConstraintLayout
 	 */
 	private void showBitmap(ImageView icon, Bitmap bm) {
 		setIconFit(icon, false);
+		if (grid && (bm.getHeight() > 0) && ((float) bm.getWidth() / bm.getHeight() < 1.4f)) {
+			icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+		}
 		icon.setImageTintList(null);
 		icon.setImageBitmap(bm);
 	}
@@ -145,9 +148,9 @@ public class MediaItemView extends ConstraintLayout
 
 	private void setIconFit(ImageView icon, boolean fit) {
 		if (!grid) return;
+		icon.setBackgroundResource(R.drawable.media_item_poster_bg);
 		if (fit) {
-			int pad = Math.max(icon.getHeight(), icon.getWidth() * 9 / 16) / 4;
-			if (pad == 0) pad = (int) toPx(getContext(), 18);
+			int pad = (int) toPx(getContext(), 22);
 			icon.setPadding(pad, pad, pad, pad);
 			icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
 		} else {
@@ -324,6 +327,7 @@ public class MediaItemView extends ConstraintLayout
 			rotate.setDuration(1000);
 			rotate.setRepeatCount(Animation.INFINITE);
 			setIconFit(icon, true);
+			if (grid) icon.setBackground(null); // only the spinner rotates, not the poster
 			icon.setImageDrawable(getLoadingDrawable(getContext()));
 			icon.startAnimation(rotate);
 			getSubtitle().setText(R.string.loading);
@@ -430,7 +434,12 @@ public class MediaItemView extends ConstraintLayout
 		int t = i.getTop();
 		int r = i.getRight();
 		int b = i.getBottom();
-		d.setBounds(l + (r - l) / 3, t + (b - t) / 3, r, b);
+		if (grid) {
+			int hs = Math.min(r - l, b - t) / 3;
+			d.setBounds(r - hs, b - hs, r, b);
+		} else {
+			d.setBounds(l + (r - l) / 3, t + (b - t) / 3, r, b);
+		}
 		d.draw(canvas);
 	}
 
