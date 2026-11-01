@@ -218,7 +218,7 @@ public class HomeFragment extends MainActivityFragment {
 		img.setScaleType(ImageView.ScaleType.CENTER_CROP);
 		img.setBackgroundColor(0xFF1A1F29);
 		hero.addView(img, new FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT));
-		loadImage(lib, item, img, false);
+		loadImage(lib, item, img, false, false);
 
 		// Fade into the page background, like the Apple TV top shelf
 		View shade = new View(ctx);
@@ -344,28 +344,45 @@ public class HomeFragment extends MainActivityFragment {
 	}
 
 	/**
-	 * Video frame / artwork for an item; generic video icon when there is none.
+	 * Video frame / artwork for an item.
+	 *
+	 * @param resize      load a scaled-down bitmap (posters) or the full one (featured video)
+	 * @param placeholder show a generic video icon when there is no artwork
 	 */
-	static void loadImage(MediaLib lib, PlayableItem item, ImageView img, boolean resize) {
+	static void loadImage(MediaLib lib, PlayableItem item, ImageView img, boolean resize,
+												boolean placeholder) {
 		img.setTag(item);
 		item.getMediaDescription().main().onCompletion((md, err) -> {
 			if (img.getTag() != item) return;
 			Uri uri = (md == null) ? null : md.getIconUri();
 			if ((uri == null) || SCHEME_ANDROID_RESOURCE.equals(uri.getScheme())) {
-				showPlaceholder(img);
+				if (placeholder) showPlaceholder(img);
 				return;
 			}
-			lib.getBitmap(uri.toString(), true, resize).main().onCompletion((Bitmap bm, Throwable e) -> {
+			String u = uri.toString();
+			lib.getBitmap(u, true, resize).main().onCompletion((Bitmap bm, Throwable e) -> {
 				if (img.getTag() != item) return;
 				if (bm != null) {
-					img.setScaleType(ImageView.ScaleType.CENTER_CROP);
-					img.setPadding(0, 0, 0, 0);
-					img.setImageBitmap(bm);
-				} else {
+					showBitmap(img, bm);
+				} else if (!resize) {
+					// Some sources only provide the scaled thumbnail
+					lib.getBitmap(u, true, true).main().onCompletion((Bitmap bm2, Throwable e2) -> {
+						if (img.getTag() != item) return;
+						if (bm2 != null) showBitmap(img, bm2);
+						else if (placeholder) showPlaceholder(img);
+					});
+				} else if (placeholder) {
 					showPlaceholder(img);
 				}
 			});
 		});
+	}
+
+	private static void showBitmap(ImageView img, Bitmap bm) {
+		img.clearColorFilter();
+		img.setScaleType(ImageView.ScaleType.CENTER_CROP);
+		img.setPadding(0, 0, 0, 0);
+		img.setImageBitmap(bm);
 	}
 
 	private static void showPlaceholder(ImageView img) {
@@ -443,7 +460,7 @@ public class HomeFragment extends MainActivityFragment {
 			h.title.setText(displayName(i));
 			h.image.setImageDrawable(null);
 			h.image.clearColorFilter();
-			loadImage(lib, i, h.image, true);
+			loadImage(lib, i, h.image, true, true);
 			long pos = lib.getLastPlayedPosition(i);
 			h.progress.setVisibility(View.GONE);
 			h.itemView.setTag(i);
