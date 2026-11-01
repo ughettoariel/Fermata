@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Infuse / Apple TV style poster grid -->
+    <color name="media_item_poster_bg">#1FFFFFFF</color>
+    <color name="media_item_poster_progress">#F2FFFFFF</color>
+    <color name="media_item_poster_track">#59000000</color>
+    <dimen name="media_item_poster_min_width">170dp</dimen>
+
+    <style name="AppTheme.PosterShape" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+</resources>

@@ -157,9 +157,35 @@ public class MirrorServiceFS extends CarAppService {
 			var backButton = new Action.Builder().setIcon(
 							new CarIcon.Builder(createWithResource(getCarContext(), R.drawable.back)).build())
 					.setOnClickListener(MirrorActivity::onBackButtonClick).build();
+			var nextAppButton = new Action.Builder().setIcon(
+							new CarIcon.Builder(createWithResource(getCarContext(), R.drawable.apps)).build())
+					.setOnClickListener(this::openNextQuickApp).build();
 			return new NavigationTemplate.Builder().setActionStrip(
-							new ActionStrip.Builder().addAction(homeButton).addAction(backButton).build())
+							new ActionStrip.Builder().addAction(nextAppButton).addAction(homeButton)
+									.addAction(backButton).build())
 					.setMapActionStrip(new ActionStrip.Builder().addAction(Action.PAN).build()).build();
+		}
+
+		/**
+		 * Cycles through the favorite apps: opens the one after the app last opened.
+		 */
+		private void openNextQuickApp() {
+			var ctx = FermataApplication.get();
+			var apps = LauncherActivity.getQuickApps(ctx, Integer.MAX_VALUE);
+			if (apps.isEmpty()) {
+				MirrorActivity.onHomeButtonClick();
+				return;
+			}
+			var last = LauncherActivity.getLastLaunchedPkg();
+			int next = 0;
+			for (int i = 0; i < apps.size(); i++) {
+				if (apps.get(i).pkg.equals(last)) {
+					next = (i + 1) % apps.size();
+					break;
+				}
+			}
+			var app = apps.get(next);
+			LauncherActivity.launchApp(ctx, app.pkg, app.name);
 		}
 
 		private MirrorDisplay md() {

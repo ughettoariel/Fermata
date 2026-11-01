@@ -19,6 +19,7 @@ import java.util.List;
 import me.aap.fermata.media.lib.MediaLib;
 import me.aap.fermata.media.lib.MediaLib.Item;
 import me.aap.fermata.media.lib.MediaLib.PlayableItem;
+import me.aap.fermata.R;
 import me.aap.fermata.ui.activity.MainActivityDelegate;
 import me.aap.fermata.ui.activity.MainActivityPrefs;
 import me.aap.fermata.ui.fragment.MediaLibFragment;
@@ -56,7 +57,10 @@ public class MediaItemListView extends RecyclerView implements PreferenceStore.L
 
 			if (grid) {
 				float scale = prefs.getTextIconSizePref(a);
-				int span = (int) Math.max(cfg.screenWidthDp / (128 * scale), 2);
+				// Wide 16:9 posters (Infuse / Apple TV style) need wider columns than square icons
+				float minWidthDp = ctx.getResources().getDimension(R.dimen.media_item_poster_min_width) /
+						ctx.getResources().getDisplayMetrics().density;
+				int span = (int) Math.max(cfg.screenWidthDp / (minWidthDp * scale), 2);
 				setLayoutManager(new GridLayoutManager(ctx, span));
 			} else {
 				setLayoutManager(new LinearLayoutManager(ctx));

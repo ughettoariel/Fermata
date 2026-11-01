@@ -12,6 +12,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Point;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -28,8 +29,14 @@ import android.widget.LinearLayout;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.car.app.SurfaceContainer;
+import androidx.core.content.res.ResourcesCompat;
 
 import com.google.android.apps.auto.sdk.CarActivity;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 import me.aap.fermata.FermataApplication;
 import me.aap.fermata.R;
@@ -139,7 +146,7 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 		ctx.startActivity(intent);
 	}
 
-	private static void homeScreen() {
+	static void homeScreen() {
 		if (!EventDispatcher.get().home()) {
 			var ctx = FermataApplication.get();
 			Intent intent = new Intent(Intent.ACTION_MAIN);
@@ -150,13 +157,18 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 		disableAccelRotation();
 	}
 
+	/**
+	 * Floating, draggable bar: favorite apps for quick switching, then Home and Back.
+	 */
 	private static final class ToolBar extends LinearLayout {
+		private static final int MAX_QUICK_APPS = 5;
 		private final ReschedulableTask delayedHide = new ReschedulableTask() {
 			@Override
 			protected void perform() {
 				setVisibility(GONE);
 			}
 		};
+		private final List<Button> buttons = new ArrayList<>();
 		private final float moveTolerance;
 		private final Animation animation;
 		private final float minX;
@@ -164,15 +176,17 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 		private final float minY;
 		private final float maxY;
 		private final int iconSize;
+		private final int pad;
+		private String[] appsPref;
+		private String highlightedPkg;
 		private long downTime;
 		private float downX, downY;
 		private View downButton;
 		private boolean moving;
 
-
 		public ToolBar(Context ctx) {
 			super(ctx);
-			var pad = toPx(ctx, 5);
+			pad = (int) toPx(ctx, 5);
 			var dm = ctx.getResources().getDisplayMetrics();
 			minX = pad;
 			maxX = dm.widthPixels - pad;
@@ -180,31 +194,59 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 			maxY = dm.heightPixels - pad;
 			iconSize = (int) Math.max(Math.min(dm.widthPixels, dm.heightPixels) / 8f, toPx(ctx, 20));
 			setLayoutParams(new FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT));
-			setX(dm.widthPixels - iconSize * 2 - pad);
-			setY(pad);
-
-			var iconPad = iconSize / 4;
-			var icons = new int[]{R.drawable.home, R.drawable.back};
-			for (var icon : icons) {
-				var v = new AppCompatImageView(ctx);
-				addView(v);
-				v.setId(icon);
-				v.setImageResource(icon);
-				v.setBackgroundResource(R.drawable.oval_bg);
-				v.setPadding(iconPad, iconPad, iconPad, iconPad);
-				v.setLayoutParams(new LinearLayout.LayoutParams(iconSize, iconSize));
-				v.setAdjustViewBounds(true);
-				v.setScaleType(ImageView.ScaleType.FIT_CENTER);
-			}
-
 			moveTolerance = toPx(ctx, 10);
 			animation = AnimationUtils.loadAnimation(ctx, me.aap.utils.R.anim.button_press);
+			rebuild();
+			setX(Math.max(minX, maxX - iconSize * buttons.size()));
+			setY(pad);
 			delayedHide.schedule(5000);
 		}
 
 		void show() {
+			if (!Arrays.equals(appsPref, LauncherActivity.getQuickAppsPref()) ||
+					!Objects.equals(highlightedPkg, LauncherActivity.getLastLaunchedPkg())) {
+				rebuild();
+				setX(Math.max(minX, Math.min(getX(), maxX - iconSize * buttons.size())));
+			}
 			setVisibility(VISIBLE);
 			delayedHide.schedule(5000);
+		}
+
+		private void rebuild() {
+			var ctx = getContext();
+			removeAllViews();
+			buttons.clear();
+			appsPref = LauncherActivity.getQuickAppsPref();
+			highlightedPkg = LauncherActivity.getLastLaunchedPkg();
+
+			for (var app : LauncherActivity.getQuickApps(ctx, MAX_QUICK_APPS)) {
+				var selected = app.pkg.equals(highlightedPkg);
+				addButton(app.icon, false, selected, () -> {
+					LauncherActivity.launchApp(ctx, app.pkg, app.name);
+					show();
+				}, null);
+			}
+
+			var home = ResourcesCompat.getDrawable(getResources(), R.drawable.home, ctx.getTheme());
+			var back = ResourcesCompat.getDrawable(getResources(), R.drawable.back, ctx.getTheme());
+			addButton(home, true, false, MirrorActivity::onHomeButtonClick,
+					MirrorActivity::homeScreen);
+			addButton(back, true, false, MirrorActivity::onBackButtonClick,
+					MirrorActivity::onBackButtonClick);
+		}
+
+		private void addButton(Drawable icon, boolean tinted, boolean selected, Runnable onClick,
+													 Runnable onLongClick) {
+			var v = new AppCompatImageView(getContext());
+			var iconPad = tinted ? iconSize / 4 : iconSize / 6;
+			v.setImageDrawable(icon);
+			v.setBackgroundResource(selected ? R.drawable.oval_bg_selected : R.drawable.oval_bg);
+			v.setPadding(iconPad, iconPad, iconPad, iconPad);
+			v.setLayoutParams(new LinearLayout.LayoutParams(iconSize, iconSize));
+			v.setAdjustViewBounds(true);
+			v.setScaleType(ImageView.ScaleType.FIT_CENTER);
+			addView(v);
+			buttons.add(new Button(onClick, (onLongClick == null) ? onClick : onLongClick));
 		}
 
 		@SuppressLint("ClickableViewAccessibility")
@@ -217,7 +259,7 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 					downX = e.getRawX();
 					downY = e.getRawY();
 					downButton = getChildAt(getButtonAt(e.getX()));
-					downButton.startAnimation(animation);
+					if (downButton != null) downButton.startAnimation(animation);
 					return true;
 				}
 				case MotionEvent.ACTION_MOVE -> {
@@ -241,8 +283,9 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 							return true;
 						}
 					}
-					if ((uptimeMillis() - downTime) < 400) handleClick(e.getX());
-					else handleLongClick(e.getX());
+					var b = buttons.get(getButtonAt(e.getX()));
+					if ((uptimeMillis() - downTime) < 400) b.onClick.run();
+					else b.onLongClick.run();
 					return true;
 				}
 				default -> {
@@ -252,17 +295,9 @@ public class MirrorActivity extends CarActivity implements SurfaceHolder.Callbac
 		}
 
 		private int getButtonAt(float x) {
-			return (x < iconSize) ? 0 : 1;
+			return Math.max(0, Math.min(buttons.size() - 1, (int) (x / iconSize)));
 		}
 
-		private void handleClick(float x) {
-			if (getButtonAt(x) == 0) onHomeButtonClick();
-			else onBackButtonClick();
-		}
-
-		private void handleLongClick(float x) {
-			if (getButtonAt(x) == 0) homeScreen();
-			else onBackButtonClick();
-		}
+		private record Button(Runnable onClick, Runnable onLongClick) {}
 	}
 }

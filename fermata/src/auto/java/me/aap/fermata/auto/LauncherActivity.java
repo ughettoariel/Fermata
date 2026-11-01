@@ -74,6 +74,106 @@ public class LauncherActivity extends AppCompatActivity {
 		return activeInstance;
 	}
 
+	/**
+	 * Package of the app last opened from the launcher or the quick switcher.
+	 */
+	@Nullable
+	private static String lastLaunchedPkg;
+
+	@Nullable
+	static String getLastLaunchedPkg() {
+		return lastLaunchedPkg;
+	}
+
+	/**
+	 * A favorite app, as shown in the quick switcher.
+	 */
+	static final class QuickApp {
+		final String pkg;
+		@Nullable
+		final String name;
+		final String label;
+		final Drawable icon;
+
+		QuickApp(String pkg, @Nullable String name, String label, Drawable icon) {
+			this.pkg = pkg;
+			this.name = name;
+			this.label = label;
+			this.icon = icon;
+		}
+	}
+
+	/**
+	 * Raw value of the favorites preference, used to detect changes cheaply.
+	 */
+	static String[] getQuickAppsPref() {
+		return MainActivityPrefs.get().getStringArrayPref(AA_LAUNCHER_APPS);
+	}
+
+	/**
+	 * Installed favorite apps in launcher order, without Fermata's own entries
+	 * (add, exit and Fermata itself).
+	 */
+	static List<QuickApp> getQuickApps(Context ctx, int max) {
+		var pm = ctx.getPackageManager();
+		var own = FermataApplication.get().getPackageName();
+		var result = new ArrayList<QuickApp>(max);
+
+		for (var entry : getQuickAppsPref()) {
+			if (result.size() >= max) break;
+			var sep = entry.indexOf('#');
+			var pkg = (sep < 0) ? entry : entry.substring(0, sep);
+			var name = (sep < 0) ? null : entry.substring(sep + 1);
+			if (pkg.equals(own)) continue;
+
+			try {
+				if (name == null) {
+					var info = pm.getApplicationInfo(pkg, 0);
+					if (pm.getLaunchIntentForPackage(pkg) == null) continue;
+					result.add(new QuickApp(pkg, null, pm.getApplicationLabel(info).toString(),
+							pm.getApplicationIcon(info)));
+				} else {
+					var cn = new android.content.ComponentName(pkg, name);
+					var info = pm.getActivityInfo(cn, 0);
+					result.add(new QuickApp(pkg, name, info.loadLabel(pm).toString(),
+							info.loadIcon(pm)));
+				}
+			} catch (PackageManager.NameNotFoundException ignore) {
+				// Uninstalled since it was added to the favorites
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * Opens an app on the mirrored display.
+	 *
+	 * @param name launcher activity, or null to use the package's default one
+	 */
+	static boolean launchApp(Context ctx, String pkg, @Nullable String name) {
+		try {
+			Intent intent;
+			if (name == null) {
+				intent = ctx.getPackageManager().getLaunchIntentForPackage(pkg);
+				if (intent == null) return false;
+			} else {
+				intent = new Intent(Intent.ACTION_MAIN);
+				intent.addCategory(Intent.CATEGORY_LAUNCHER);
+				intent.setClassName(pkg, name);
+			}
+			intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+			intent.putExtra(INTENT_EXTRA_MODE, FermataApplication.get().getMirroringMode());
+			ctx.startActivity(intent);
+			lastLaunchedPkg = pkg;
+			MirrorDisplay.disableAccelRotation();
+			return true;
+		} catch (Exception err) {
+			Toast.makeText(ctx, err.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+			return false;
+		}
+	}
+
 	@Override
 	public void onConfigurationChanged(@NonNull Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
@@ -429,17 +529,7 @@ public class LauncherActivity extends AppCompatActivity {
 				} else if (appInfo.equals(AppInfo.BACK)) {
 					selectApps();
 				} else {
-					try {
-						var intent = new Intent(Intent.ACTION_MAIN);
-						intent.addCategory(Intent.CATEGORY_LAUNCHER);
-						intent.setClassName(appInfo.pkg, appInfo.name);
-						intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
-						intent.putExtra(INTENT_EXTRA_MODE, FermataApplication.get().getMirroringMode());
-						getContext().startActivity(intent);
-						MirrorDisplay.disableAccelRotation();
-					} catch (Exception err) {
-						Toast.makeText(getContext(), err.getLocalizedMessage(), Toast.LENGTH_LONG).show();
-					}
+					launchApp(getContext(), appInfo.pkg, appInfo.name);
 				}
 			}
 		}

@@ -13,6 +13,8 @@ import static me.aap.utils.ui.activity.ActivityListener.ACTIVITY_DESTROY;
 
 import android.content.ContentResolver;
 import android.content.Context;
+import androidx.annotation.DrawableRes;
+import android.animation.AnimatorInflater;
 import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
@@ -86,6 +88,7 @@ public class MediaItemView extends ConstraintLayout
 	@Nullable
 	private MediaItemViewHolder holder;
 	private ProgressUpdater progressUpdater;
+	private boolean grid;
 	private VectorDrawableCompat watchedVideoDrawable;
 	private VectorDrawableCompat watchingVideoDrawable;
 	private VectorDrawableCompat archiveLabelDrawable;
@@ -116,7 +119,41 @@ public class MediaItemView extends ConstraintLayout
 	public void applyLayout(Context ctx, boolean grid, float size) {
 		removeAllViews();
 		inflate(ctx, grid ? R.layout.media_item_grid_layout : R.layout.media_item_list_layout, this);
+		this.grid = grid;
+		setStateListAnimator(grid ?
+				AnimatorInflater.loadStateListAnimator(ctx, R.animator.media_item_poster_raise) : null);
 		setSize(ctx, grid, size);
+	}
+
+	/**
+	 * Real artwork (video frame, cover): fills the rounded poster in grid mode.
+	 */
+	private void showBitmap(ImageView icon, Bitmap bm) {
+		setIconFit(icon, false);
+		icon.setImageTintList(null);
+		icon.setImageBitmap(bm);
+	}
+
+	/**
+	 * Generic icon (folder, file type): centered and smaller, so it isn't cropped.
+	 */
+	private void showResIcon(ImageView icon, @DrawableRes int res) {
+		setIconFit(icon, true);
+		icon.setImageTintList(iconTint);
+		icon.setImageResource(res);
+	}
+
+	private void setIconFit(ImageView icon, boolean fit) {
+		if (!grid) return;
+		if (fit) {
+			int pad = Math.max(icon.getHeight(), icon.getWidth() * 9 / 16) / 4;
+			if (pad == 0) pad = (int) toPx(getContext(), 18);
+			icon.setPadding(pad, pad, pad, pad);
+			icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+		} else {
+			icon.setPadding(0, 0, 0, 0);
+			icon.setScaleType(ImageView.ScaleType.CENTER_CROP);
+		}
 	}
 
 	public void setSize(Context ctx, boolean grid, float size) {
@@ -238,25 +275,21 @@ public class MediaItemView extends ConstraintLayout
 												cancelLoading();
 
 												if (bm != null) {
-													icon.setImageTintList(null);
-													icon.setImageBitmap(bm);
+													showBitmap(icon, bm);
 												} else {
-													icon.setImageTintList(iconTint);
-													icon.setImageResource(i.getIcon());
+													showResIcon(icon, i.getIcon());
 												}
 											});
 
 							if (!loadIcon.isDone()) {
 								ImageView icon = getIcon();
 								icon.clearAnimation();
-								icon.setImageTintList(iconTint);
-								icon.setImageResource(i.getIcon());
+								showResIcon(icon, i.getIcon());
 							}
 						} else {
 							ImageView icon = getIcon();
 							icon.clearAnimation();
-							icon.setImageTintList(iconTint);
-							icon.setImageResource(i.getIcon());
+							showResIcon(icon, i.getIcon());
 							cancelLoading();
 						}
 					}
@@ -290,13 +323,13 @@ public class MediaItemView extends ConstraintLayout
 		if (loading) {
 			rotate.setDuration(1000);
 			rotate.setRepeatCount(Animation.INFINITE);
+			setIconFit(icon, true);
 			icon.setImageDrawable(getLoadingDrawable(getContext()));
 			icon.startAnimation(rotate);
 			getSubtitle().setText(R.string.loading);
 		} else {
 			icon.clearAnimation();
-			icon.setImageTintList(iconTint);
-			icon.setImageResource(i.getIcon());
+			showResIcon(icon, i.getIcon());
 			getSubtitle().setText("");
 		}
 	}
