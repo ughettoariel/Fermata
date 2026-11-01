@@ -29,8 +29,13 @@ include ':fermata'
 include ':utils'
 project(':utils').projectDir = file('depends/utils')
 
+// Optional: SKIP_MODULES=whisper,... leaves add-on modules out of a local build
+// (e.g. whisper only configures on Linux hosts).
+def skipModules = (System.getenv('SKIP_MODULES') ?: '').split(',')*.trim().findAll { it }
+
 file('modules').eachDir {
     def name = ':' + it.name
+    if (skipModules.contains(it.name)) return
     if ((':gdrive' == name) && !gradle.ext.enableGoogleServices) return
     gradle.ext.modules.add(name)
     include name
